@@ -1,0 +1,255 @@
+{% extends 'main/base.html' %}
+
+{% block extrahead %}
+<style>
+  /* css marquee */
+  .container {
+  overflow: hidden; /* Hide overflowing text */
+  width: fit-content; /* Adjust width as needed */
+}
+
+.scrolling-text {
+  display: inline-block; /* Display text inline */
+  white-space: nowrap; /* Prevent text wrapping */
+  animation: scroll-text 25s linear infinite;
+  background-color: #121212;
+  color:#dadada;
+}
+
+@keyframes scroll-text {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+    #test {
+        display:block;
+    }
+
+    #result {
+        display: none;
+    }
+    .question {
+      color:orange;
+}
+
+.resultspan{
+  color:orange;
+}
+.solution-label {
+    color: orange;
+}
+#result-summary{
+    color: #dadada;
+    background-color: #121212;
+    border:black;
+    border-radius: 12px;
+    height:40px;
+    padding: 10px 0px 0px 10px;
+}
+.valuespan{
+    border: 3px solid black;
+    border-radius: 12px;
+    margin: 10px; /* Apply margin of 10px to all four sides */
+    padding: 5px; 
+}
+.correctspan{
+    background-color: greenyellow;
+    color:black;
+}
+.wrongspan{
+    background-color: red;
+    color: black;
+}
+.truthspan{
+    color: chocolate;
+    padding-left: 12px;
+}
+
+</style>
+{% endblock %}
+{% block body %}
+<div class="container" id="test">
+  <div class="container">
+    <p id="banner-text1" class="scrolling-text">More than one option can be correct and to correctly answer a problem you are required to choose all the correct options.</p>
+  </div>
+<h1>{{ subject }} Test</h1>
+
+<form id="testForm">
+  {% csrf_token %}
+  <ol>
+    {% for question in questions %}
+      <li style="font-style: italic;color:orange;font-size: 1em;">
+        {{ question.body }}
+        <ul class="mt-3 mb-2" style="list-style: none;">
+          {% for option in question.options %}
+            <li style="color:beige">
+              <input type="radio" name="question_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" value="{{ option }}">
+              {{ option }}
+            </li>
+          {% endfor %}
+        </ul>
+      </li>
+    {% endfor %}
+  </ol>
+  <input type="button" value="Submit Test" onclick="submitTest()">
+</form>
+</div>
+
+<div class="container" id="result">
+  <div class="container">
+    <p id="banner-text2" class="scrolling-text">Beside every option you can see if that option was correct or wrong. Your chosen options will be colored green or red based on if that is right one or wrong one and remember you will get the question correct only if you have chosen all of the correct answers. You will not get any if you have chosen any wrong answer.</p>
+  </div>
+<h1>Results</h1>
+<div id="result-summary">
+    
+</div>
+<div id="result-content">
+
+</div>
+
+</div>
+
+<script>
+  
+function submitTest() {
+    document.getElementById('test').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+  var questions = {{ questions|safe }};
+  var modifiedQuestions = [];
+
+  // Loop through each question
+  for (var i = 0; i < questions.length; i++) {
+    var currentQuestion = questions[i];
+    var selectedOption = getSelectedOption(i); // Function to get selected option
+
+    // Add selectedOption key-value pair to the question dictionary
+    currentQuestion.selectedOption = selectedOption;
+    if (isEqArrays(currentQuestion.correct_options, currentQuestion.selectedOption)){
+        var result= "correct";
+        currentQuestion.result = result;
+    }
+    else{
+        var result= "wrong";
+        currentQuestion.result = result;
+    }
+    modifiedQuestions.push(currentQuestion);
+    
+  }
+
+  console.log(modifiedQuestions); // You can remove this for production
+//   ============================
+// Result summary
+  var correctCount = 0;
+    for (var i = 0; i < modifiedQuestions.length; i++) {
+      if (modifiedQuestions[i].result === "correct") {
+        correctCount++;
+      }
+    }
+    var summaryText = document.getElementById('result-summary');
+    summaryText.textContent = "You got " + correctCount + " out of " + questions.length + " questions correct.";
+//   ==================================
+  // Build and display the results in the #result-content div
+  var resultContent = document.getElementById('result-content');
+//   resultContent.innerHTML = ''; // Clear previous content
+
+  for (var i = 0; i < modifiedQuestions.length; i++) {
+    var question = modifiedQuestions[i];
+    var resultDiv = document.createElement('div');
+    resultDiv.classList.add('question-result');
+
+    // Question Text
+    var questionText = document.createElement('p');
+    questionText.textContent = 'Q' + (i + 1) + '. ' + question.body;
+    questionText.classList.add('question');
+    resultDiv.appendChild(questionText);
+    
+
+    var optionsDiv = document.createElement('div');
+ optionsDiv.classList.add('question-options');
+ for (var j = 0; j < question.options.length; j++) {
+   var optionText = document.createElement('p');
+   var optionSpan = document.createElement('span');
+   optionSpan.textContent = (j + 1) + '. ';
+   optionText.appendChild(optionSpan);
+
+   var optionValueSpan = document.createElement('span');
+   if ( question.selectedOption.includes(question.options[j]) && question.correct_options.includes(question.options[j])) {
+    optionValueSpan.classList.add('correctspan');
+   } 
+   if (question.selectedOption.includes(question.options[j]) && !question.correct_options.includes(question.options[j])) {
+    optionValueSpan.classList.add('wrongspan');
+   }
+   optionValueSpan.classList.add('valuespan');
+   optionValueSpan.textContent = question.options[j];
+   optionText.appendChild(optionValueSpan);
+
+   var resultSpan = document.createElement('span');
+   resultSpan.classList.add('truthspan');
+    // Apply a class for styling
+   if (question.correct_options.includes(question.options[j])) {
+    resultSpan.textContent= "correct"
+   } else {
+     resultSpan.textContent = "wrong";
+   }
+   optionText.appendChild(resultSpan);
+
+   optionsDiv.appendChild(optionText);
+ }
+ resultDiv.appendChild(optionsDiv);
+
+//  =================
+
+
+// Create a span for "Solution: "
+var solutionP = document.createElement('p');
+solutionP.innerHTML = '<span class="solution-label">Solution: </span>' + question.answer;
+resultDiv.appendChild(solutionP);
+
+
+    resultContent.appendChild(resultDiv)
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+  }
+// ======================================
+
+}
+
+// Function to get the selected option for a question (modify based on your radio button name format)
+function getSelectedOption(questionIndex) {
+  var radioName = "question_" + (questionIndex + 1) + "_";
+  var radios = document.querySelectorAll('input[name^="' + radioName + '"]');
+  var result= []
+
+  for (var j = 0; j < radios.length; j++) {
+    if (radios[j].checked) {
+      result.push(radios[j].value);
+    }
+  }
+return result
+
+}
+
+function inArray(array, el) {
+  for ( var i = array.length; i--; ) {
+    if ( array[i] === el ) return true;
+  }
+  return false;
+}
+
+function isEqArrays(arr1, arr2) {
+  if ( arr1.length !== arr2.length ) {
+    return false;
+  }
+  for ( var i = arr1.length; i--; ) {
+    if ( !inArray( arr2, arr1[i] ) ) {
+      return false;
+    }
+  }
+  return true;
+}
+</script>
+
+{% endblock %}

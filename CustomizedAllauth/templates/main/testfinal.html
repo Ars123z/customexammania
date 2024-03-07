@@ -1,0 +1,180 @@
+{% extends 'main/base.html' %}
+
+{% block extrahead %}
+<style>
+    #test {
+        display:block;
+    }
+
+    #result {
+        display: none;
+    }
+    .question {
+      color:orange;
+}
+
+.resultspan {
+  color:orange
+}
+</style>
+{% endblock %}
+{% block body %}
+
+<div class="container" id="test">
+<h1>{{ subject }} Test</h1>
+
+<form id="testForm">
+  {% csrf_token %}
+  <ol>
+    {% for question in questions %}
+      <li style="font-style: italic;color:orange;font-size: 1em;">
+        {{ question.body }}
+        <ul class="mt-3 mb-2" style="list-style: none;">
+          {% for option in question.options %}
+            <li style="color:beige">
+              <input type="radio" name="question_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" value="{{ option }}">
+              {{ option }}
+            </li>
+          {% endfor %}
+        </ul>
+      </li>
+    {% endfor %}
+  </ol>
+  <input type="button" value="Submit Test" onclick="submitTest()">
+</form>
+</div>
+
+<div class="container" id="result">
+<h1>Results</h1>
+<div id="result-content">
+
+</div>
+</div>
+
+<script>
+  
+function submitTest() {
+    document.getElementById('test').style.display = 'none';
+    document.getElementById('result').style.display = 'block';
+  var questions = {{ questions|safe }};
+  var modifiedQuestions = [];
+
+  // Loop through each question
+  for (var i = 0; i < questions.length; i++) {
+    var currentQuestion = questions[i];
+    var selectedOption = getSelectedOption(i); // Function to get selected option
+
+    // Add selectedOption key-value pair to the question dictionary
+    currentQuestion.selectedOption = selectedOption;
+    if (isEqArrays(currentQuestion.correct_options, currentQuestion.selectedOption)){
+        var result= "correct";
+        currentQuestion.result = result;
+    }
+    else{
+        var result= "wrong";
+        currentQuestion.result = result;
+    }
+    modifiedQuestions.push(currentQuestion);
+    
+  }
+
+  console.log(modifiedQuestions); // You can remove this for production
+//   ==================================
+  // Build and display the results in the #result-content div
+  var resultContent = document.getElementById('result-content');
+//   resultContent.innerHTML = ''; // Clear previous content
+
+  for (var i = 0; i < modifiedQuestions.length; i++) {
+    var question = modifiedQuestions[i];
+    var resultDiv = document.createElement('div');
+    resultDiv.classList.add('question-result');
+
+    // Question Text
+    var questionText = document.createElement('p');
+    questionText.textContent = 'Q' + (i + 1) + '. ' + question.body;
+    questionText.classList.add('question');
+    resultDiv.appendChild(questionText);
+
+    // Result
+    var resultText = document.createElement('p');
+    // resultText.classList.add(question.result); // Add 'correct' or 'wrong' class
+    // resultText.textContent = 'Result: ' + question.result;
+    var resultLabelText = document.createElement('span');
+    resultLabelText.classList.add('resultspan');
+    resultLabelText.textContent = 'Result: ';
+    resultText.appendChild(resultLabelText);
+
+// Result (correct or wrong) in a separate span
+    var resultValueText = document.createElement('span');
+    resultValueText.textContent = question.result;
+    resultText.appendChild(resultValueText);
+
+    resultDiv.appendChild(resultText);
+
+    // Your Answer
+    if (selectedOption != []){
+        var yourAnswerText = document.createElement('p');
+        yourAnswerText.textContent = 'Your answer: ' + question.selectedOption.join(', ');
+        resultDiv.appendChild(yourAnswerText);
+    }
+    else{
+        var yourAnswerText = document.createElement('p');
+        yourAnswerText.textContent = 'You don\'t select any answer';
+        resultDiv.appendChild(yourAnswerText);
+    }
+
+
+    // Correct Answer
+    var correctAnswerText = document.createElement('p');
+    correctAnswerText.textContent = 'Correct answer: ' + question.correct_options.join(', ');
+    resultDiv.appendChild(correctAnswerText);
+
+
+
+    //solution
+    var solutionText = document.createElement('p');
+    solutionText.textContent = 'Solution: ' + question.answer;
+    resultDiv.appendChild(solutionText);
+
+    resultContent.appendChild(resultDiv);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+  }
+// ======================================
+
+}
+// Function to get the selected option for a question (modify based on your radio button name format)
+function getSelectedOption(questionIndex) {
+  var radioName = "question_" + (questionIndex + 1) + "_";
+  var radios = document.querySelectorAll('input[name^="' + radioName + '"]');
+  var result= []
+
+  for (var j = 0; j < radios.length; j++) {
+    if (radios[j].checked) {
+      result.push(radios[j].value);
+    }
+  }
+return result
+
+}
+
+function inArray(array, el) {
+  for ( var i = array.length; i--; ) {
+    if ( array[i] === el ) return true;
+  }
+  return false;
+}
+
+function isEqArrays(arr1, arr2) {
+  if ( arr1.length !== arr2.length ) {
+    return false;
+  }
+  for ( var i = arr1.length; i--; ) {
+    if ( !inArray( arr2, arr1[i] ) ) {
+      return false;
+    }
+  }
+  return true;
+}
+</script>
+
+{% endblock %}

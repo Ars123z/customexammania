@@ -1,0 +1,201 @@
+{% extends "main/base.html" %}
+
+{% block extrahead %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js" integrity="sha512-VCEWnpOl7PIhbYMcb64pqGZYez41C2uws/M/mDdGPy+vtEJHd9BqbShE4/VNnnZdr7YCPOjd+CBmYca/7WWWCw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>
+tinymce.init({
+    selector: '#feedbacktext',
+    plugins: 'a11ychecker advcode advlist anchor autolink codesample colorpicker contextmenu fullscreen help image imagetools lists media paste powerpaste preview save searchreplace table template textcolor visualblocks wordcount',
+    toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | indent outdent | numlist bullist | link image media | forecolor backcolor | help',
+    menubar: false // Hide the default menubar (optional)
+});
+</script>
+
+<script>
+    tinymce.init({
+        selector: '#conanswertext',
+        plugins: 'a11ychecker advcode advlist anchor autolink codesample colorpicker contextmenu fullscreen help image imagetools lists media paste powerpaste preview save searchreplace table template textcolor visualblocks wordcount',
+        toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | indent outdent | numlist bullist | link image media | forecolor backcolor | help',
+        menubar: false, // Hide the default menubar (optional)
+    });
+</script>
+<style>
+    .feedback .feedback-area {
+         font-size: 1.2em;
+}
+</style>
+{% endblock %}
+{% block body %}
+<div id="mainblock" class="container body">
+  <h1 style="text-align:center">{{subject|upper}}</h1>
+  <p style="font-style: italic;color:orange;font-size: 1em;">Q{{no}}.&nbsp;{{body|safe}}</p>
+  <p style="font-size: o.8em;">{{level}}</p>
+</div>
+<div class="container options">
+  <div class="row">
+    {% for option in options %}
+    <div class="col-lg-6 col-md-6 col-sm-12">
+      <span style="display: inline-block; height: 2em;margin-bottom: 10px;">{{forloop.counter}}.&nbsp;</span>
+      {% if option in correct_options %}
+      <span
+        style="font-style: italic; font-size: 1em; display: inline-block; height: 2em; border: 1px solid red; margin-bottom:10px; padding-left: 5px; padding-right: 10px; border-radius: 10px; width: 220px;"
+        class="answer">{{ option.content|safe }}</span>
+      {% else %}
+      <span
+        style="font-style: italic; font-size: 1em; display: inline-block; height: 2em; border: 1px solid red; margin-bottom:10px; padding-left: 5px; padding-right: 10px; border-radius: 10px; width: 220px;"
+        class="wrong">{{ option.content|safe }}</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<div class="container">
+  <div class="row">
+    <button type="button" onclick="showSolution()" style="display:none; width:150px;" id="solutionButton">Show
+      Solution</button>
+  </div>
+</div>
+
+<div class="container ans" style="display:none">
+  <div class="row">
+    <p style="font-style: italic;color:white;font-size: 1em;"><span
+        style="color:orange;">Solution:</span>&nbsp;{{answer|safe}}</p>
+  </div>
+  <div class="container">
+    <div class="row d-flex justify-content-between">
+      <div class="col-auto text-left">
+        <button type="button" onclick="showFeedback()" class="btn btn-primary">Give feedback</button>
+      </div>
+      <div class="col-auto text-right">
+        <button type="button" onclick="contributeAnswer()" class="btn btn-primary">Contribute Answer</button>
+      </div>
+    </div>
+</div>
+<div class="container mt-3 feedback" style="display:none">
+        
+  <div class="feedback-area">
+      <h2>Feedback</h2>
+      <p>Please share your thoughts and suggestions to help us improve.</p>
+      <form id="feedback-form">
+          <input type="hidden" id="book_id" value="{{ Book }}">
+          <input type="hidden" id="chapter_id" value="{{ Chapter }}">
+          <input type="hidden" id="exercise_id" value="{{ Exercise }}">
+          <input type="hidden" id="no_id" value="{{ no }}">
+        <textarea name="feedback" id= "feedbacktext" placeholder="Enter your feedback..."></textarea>
+        <button type="submit">Submit Feedback</button>
+      </form>
+  </div>
+</div>
+
+<div class="container mt-3 contributeanswer" style="display:none">
+  
+  <div class="conans-area">
+      <h2>Contribute Answer</h2>
+      <p>Please share your Answer to help us improve.</p>
+      <form id="conans-form">
+          <input type="hidden" id="book_id" value="{{ Book }}">
+          <input type="hidden" id="chapter_id" value="{{ Chapter }}">
+          <input type="hidden" id="exercise_id" value="{{ Exercise }}">
+          <input type="hidden" id="no_id" value="{{ no }}">
+        <textarea name="conanswer" id= "conanswertext" placeholder="Enter your feedback..."></textarea>
+        <button type="submit">Submit Answer</button>
+      </form>
+  </div>
+</div>
+</div>
+
+<div class="container mt-3">
+  <div class="row">
+    <button type="button" onclick="showAnswer()" style="width:150px">Show Answer</button>
+  </div>
+</div>
+<div class="container mt-3">
+  <nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-between">
+      <li class="page-item">
+        {% if no == 1 %}
+        <form method="get" action="{% url 'main:exam_solution' name year no %}">
+          <button type="submit" class="btn btn-primary disabled">Previous</button>
+        </form>
+        {% else %}
+        <form method="get" action="{% url 'main:exam_solution' name year no|add:-2 %}">
+          <button type="submit" class="btn btn-primary">Previous</button>
+        </form>
+        {% endif %}
+      </li>
+      {% if no == 90 %}
+      <li class="page-item">
+        <form method="get" action="{% url 'main:exam_solution' name year no|add:-1 %}">
+          <button type="submit" class="btn btn-primary disabled">Next</button>
+        </form>
+        {% else %}
+      <li class="page-item">
+        <form method="get" action="{% url 'main:exam_solution' name year no %}">
+          <button type="submit" class="btn btn-primary">Next</button>
+        </form>
+        {% endif %}
+      </li>
+    </ul>
+  </nav>
+</div>
+
+
+{% endblock %}
+
+
+{% block script %}
+<script>
+  function showAnswer() {
+    // Get all elements with the `.answer` class.
+    const answerElements = document.querySelectorAll('.answer');
+
+    // Change the background color of all `.answer` elements to green.
+    for (const answerElement of answerElements) {
+      answerElement.style.backgroundColor = 'green';
+    }
+
+    // Get all elements with the `.wrong` class.
+    const wrongElements = document.querySelectorAll('.wrong');
+
+    // Change the background color of all `.wrong` elements to red.
+    for (const wrongElement of wrongElements) {
+      wrongElement.style.backgroundColor = 'red';
+    }
+    const solutionButton = document.getElementById('solutionButton');
+    solutionButton.style.display = 'block'
+  }
+  function showSolution() {
+    // Get the solution div element
+    const solutionDiv = document.querySelector('.ans');
+
+    // Toggle the display style to show/hide the solution
+    if (solutionDiv.style.display === 'none' || solutionDiv.style.display === '') {
+      solutionDiv.style.display = 'block';
+    } else {
+      solutionDiv.style.display = 'none';
+    }
+  }
+
+  function showFeedback() {
+        const feedback = document.querySelector('.feedback');
+
+        if (feedback.style.display === 'none' || feedback.style.display === '') {
+            feedback.style.display = 'block';
+        } else {
+            feedback.style.display = 'none';
+        }
+    }
+
+  function contributeAnswer() {
+        const answer = document.querySelector('.contributeanswer');
+
+        if (answer.style.display === 'none' || answer.style.display === '') {
+            answer.style.display = 'block';
+        } else {
+            answer.style.display = 'none';
+        }
+    }
+
+</script>
+{% endblock %}
